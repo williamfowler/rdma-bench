@@ -1,0 +1,13 @@
+{
+  "username": "wfowler",
+  "iplist": ["192.168.100.2", "192.168.100.1"],
+  "logpath": "./logs",
+  "engine": "/users/wfowler/rdma-bench/test1-performance/traffic_engine/collie_engine",
+  "iters": 1000,
+  "bars": {
+    "tx_pfc_bar": 0,
+    "rx_pfc_bar": 0,
+    "bps_bar": 90.0,
+    "pps_bar": 4000000.0
+  }
+}

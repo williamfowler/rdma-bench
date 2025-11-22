@@ -31,7 +31,7 @@
 #include <sys/time.h>
 
 #ifdef GDR
-#include </usr/local/cuda-11.5/include/cuda.h>
+#include <cuda.h>
 #endif
 
 DECLARE_string(dev);

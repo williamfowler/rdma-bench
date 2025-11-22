@@ -54,6 +54,53 @@ def CheckMTU(ib_dev):
     return 0
     
 
+# def CheckHwConfig(ib_dev: str):
+#     # Currently Mellanox Only
+#     if "mlx" not in ib_dev:
+#         print ("Only Mellanox devices are supported.")
+#         print ("Skip device: " + ib_dev)
+#         return 0
+#     # devices[ib_dev] = [pci_dev, net_dev, mst_dev, numa]
+#     devices = {}
+#     try:
+#         # Start the mst device
+#         subprocess.run("mst start", shell=True, check=True,  stderr=subprocess.DEVNULL, stdout= subprocess.DEVNULL)
+#     except Exception as e:
+#         print ("Mst start error: " + str(e))
+#         return 1
+#     try:
+#         # Check the mst status and get the device name
+#         _ = subprocess.check_output("mst status -v", shell=True, stderr=subprocess.DEVNULL).decode("utf-8").strip().split('\n')
+#         for line in range(7, len(_), 1):
+#             ent = _[line].split()
+#             dev = ent[3]
+#             mst_dev = ent[1]
+#             pci_dev = ent[2]
+#             net_dev = ent[4]
+#             numa = int(ent[5])
+#         devices[dev] = [pci_dev, net_dev, mst_dev, numa]
+#     except Exception as e:
+#         print ("Get mst device names failed: " + str(e))
+#         return 1
+#     try:
+#         _ = subprocess.check_output("mlxconfig -d " + devices[ib_dev][2] + " q", shell=True).decode("utf-8").strip().split('\n')
+#         print ("Mellanox device " + ib_dev + " hw/fw configuration:")
+#     except Exception as e:
+#         print ("Mlxconfig not found. Please install it.")
+#         return 1   
+#     good = 1
+#     for line in _:
+#         for key in EXPECTED_MLNX_CONFIG.keys():
+#             if key in line:
+#                 OUTPUT(line)
+#                 match = re.search(r'\d+', line.strip().split()[-1])
+#                 value = int(match.group())
+#                 if value != EXPECTED_MLNX_CONFIG[key]:
+#                     ERROR_OUTPUT("Mellanox device " + ib_dev + " configuration " + key + " is " + str(value) + " different from " + str(EXPECTED_MLNX_CONFIG[key]))
+#                     good = 0 
+#     if good:
+#         OUTPUT("Mellanox device " + ib_dev + " configuration is good.")
+#     return 0
 def CheckHwConfig(ib_dev: str):
     # Currently Mellanox Only
     if "mlx" not in ib_dev:
@@ -71,17 +118,43 @@ def CheckHwConfig(ib_dev: str):
     try:
         # Check the mst status and get the device name
         _ = subprocess.check_output("mst status -v", shell=True, stderr=subprocess.DEVNULL).decode("utf-8").strip().split('\n')
-        for line in range(7, len(_), 1):
-            ent = _[line].split()
+        # Find where the data starts (skip headers)
+        data_start = 0
+        for i, line in enumerate(_):
+            if line.strip().startswith('DEVICE_TYPE'):
+                data_start = i + 1
+                break
+        
+        for line in _[data_start:]:
+            if not line.strip():  # Skip empty lines
+                continue
+            ent = line.split()
+            if len(ent) < 6:  # Make sure we have enough columns
+                continue
+            
+            # Parse columns based on actual mst status -v output:
+            # ent[0] = DEVICE_TYPE (ConnectX6LX(rev:0))
+            # ent[1] = MST path (/dev/mst/mt4127_pciconf0)
+            # ent[2] = PCI (5e:00.0)
+            # ent[3] = RDMA (mlx5_0)
+            # ent[4] = NET (net-enp94s0f0np0)
+            # ent[5] = NUMA (0)
             dev = ent[3]
             mst_dev = ent[1]
             pci_dev = ent[2]
             net_dev = ent[4]
             numa = int(ent[5])
-        devices[dev] = [pci_dev, net_dev, mst_dev, numa]
+            devices[dev] = [pci_dev, net_dev, mst_dev, numa]
+            
     except Exception as e:
         print ("Get mst device names failed: " + str(e))
         return 1
+    
+    # Check if the device we're looking for was found
+    if ib_dev not in devices:
+        print(f"Device {ib_dev} not found in mst output")
+        return 1
+        
     try:
         _ = subprocess.check_output("mlxconfig -d " + devices[ib_dev][2] + " q", shell=True).decode("utf-8").strip().split('\n')
         print ("Mellanox device " + ib_dev + " hw/fw configuration:")

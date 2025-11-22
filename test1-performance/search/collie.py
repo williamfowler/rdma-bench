@@ -40,5 +40,6 @@ if __name__ == "__main__":
     director = Director(traffic_binary=collie_engine,
                         hwmon_binary="",
                         config=config, ip_A=iplist[0], ip_B=iplist[-1],
-                        usr_A=username, usr_B=username, logpath=logpath)
+                        usr_A=username, usr_B=username, logpath=logpath,
+                        bonedev_A="enp94s0f0np0", bonedev_B="enp94s0f0np0", use_gpu=True)
     ret = director.simulated_annealing(iters=iters)

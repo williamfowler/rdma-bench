@@ -120,7 +120,7 @@ class Endhost(object):
         self._recv_wq_depth = 1
         self._send_batch = 1
         self._recv_batch = 1
-        self._use_gpu = False
+        self._use_gpu = True
         self._gpu_id = 0  # Should be the right connected GPU to the RNIC. e.g., PIX/PXB
         self._ibdev = ibdev
         self._usr = usr

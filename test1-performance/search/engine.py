@@ -57,14 +57,14 @@ class Engine(object):
             for i in range(traffic.get_process_num()):
                 # Set up server first
                 server_numa_node = server.get_numa()
-                server_cmd = "numactl -N {} -m {} {} {} {} --server --port={} --use_cuda={} --tos=105 --share_mr --gpu_id=0 2>/dev/null &".format(
+                server_cmd = "sudo numactl -N {} -m {} {} {} {} --server --port={} --use_cuda={} --tos=105 --share_mr --gpu_id=0 2>/dev/null &".format(
                     server_numa_node, server_numa_node,
                     self._binary, server.to_cmd(), traffic.to_cmd(),
                     self._global_port, bool(server._use_gpu))
                 self._commands[server_ip]["server"].append(server_cmd)
                 # Then, the client.
                 client_numa_node = client.get_numa()
-                client_cmd = "numactl -N {} -m {} {} {} {} --connect={} --port={} --use_cuda={} --tos=105  --share_mr --gpu_id=0 --run_infinitely 2>/dev/null &".format(
+                client_cmd = "sudo numactl -N {} -m {} {} {} {} --connect={} --port={} --use_cuda={} --tos=105  --share_mr --gpu_id=0 --run_infinitely 2>/dev/null &".format(
                     client_numa_node, client_numa_node,
                     self._binary, client.to_cmd(), traffic.to_cmd(),
                     server_ip, self._global_port, bool(client._use_gpu))
@@ -165,7 +165,7 @@ class Engine(object):
         clean_cmds = []
         for ip in ips:
             cmd = ["ssh", "{}@{}".format(self._ip_to_host[ip], ip),
-                   "killall", "{}".format(self._binary)]
+                   "sudo", "killall", "{}".format(self._binary)]
             try:
                 subprocess.run(cmd, stdout=subprocess.DEVNULL,
                                stderr=subprocess.DEVNULL)
