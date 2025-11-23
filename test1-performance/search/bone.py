@@ -89,3 +89,41 @@ class MlnxBoneMon(BaseBoneMon):
                     result["rx_vport_rdma_unicast_packets"] < self._pps_bar):
                 return -2
         return 0
+
+    # HW_TS_LATENCY: Collect hardware timestamp latency statistics
+    def collect_hw_latency_stats(self):
+        """
+        Read latency statistics from /tmp/collie_hw_latency_stats.txt
+        Returns dict with latency metrics in same format as other metrics
+        """
+        latency_stats = {
+            "latency_samples": 0,
+            "latency_min_ns": None,
+            "latency_avg_ns": None,
+            "latency_median_ns": None,
+            "latency_p95_ns": None,
+            "latency_p99_ns": None,
+            "latency_max_ns": None
+        }
+
+        filename = "/tmp/collie_hw_latency_stats.txt"
+        try:
+            with open(filename, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if ':' in line:
+                        key, value = line.split(':', 1)
+                        key = key.strip()
+                        value = value.strip()
+                        if key in latency_stats:
+                            if key == "latency_samples":
+                                latency_stats[key] = int(value)
+                            else:
+                                latency_stats[key] = float(value)
+        except FileNotFoundError:
+            # No latency stats available (hw_ts not enabled or no samples yet)
+            pass
+        except Exception as e:
+            print(f"Error reading latency stats: {e}")
+
+        return latency_stats

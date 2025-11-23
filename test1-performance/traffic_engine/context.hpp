@@ -98,6 +98,9 @@ class rdma_context {
   std::vector<rdma_request> ParseReqFromStr();
   std::vector<rdma_request> ParseRecvFromStr();
 
+  // HW_TS_LATENCY: Write latency statistics to file
+  void WriteLatencyStatsToFile();
+
  public:
   rdma_context(const char *dev_name, int gid_idx, int num_of_hosts,
                int num_per_host, bool print_thp)

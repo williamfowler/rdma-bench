@@ -52,6 +52,9 @@ class rdma_endpoint {
   uint64_t msgs_sent_now_ = 0;
   uint64_t timestamp_ = 0;
 
+  // HW_TS_LATENCY: Queue to store send timestamps for latency measurement
+  std::queue<uint64_t> send_timestamps_;
+
  public:
   rdma_endpoint(uint32_t id, ibv_qp *qp)
       : qp_(qp),
@@ -89,6 +92,14 @@ class rdma_endpoint {
   void SetActivated(bool state) { activated_ = state; }
   void SetMemId(int remote_mem_id) { rmem_id_ = remote_mem_id; }
   void SetServer(const std::string &name) { remote_server_ = name; }
+
+  // HW_TS_LATENCY: Get and remove send timestamp for latency calculation
+  uint64_t PopSendTimestamp() {
+    if (send_timestamps_.empty()) return 0;
+    uint64_t ts = send_timestamps_.front();
+    send_timestamps_.pop();
+    return ts;
+  }
 };
 }  // namespace Collie
 

@@ -31,7 +31,7 @@ def log_reproduce(path: str, point: Point, engine: Engine):
     return
 
 
-def log_result(path: str, point: Point, bone_results, hw_results):
+def log_result(path: str, point: Point, bone_results, hw_results, latency_stats=None):
     with open(path, "w") as f:
         logs = point.log_to_dict()
         json.dump(logs, f)
@@ -42,6 +42,11 @@ def log_result(path: str, point: Point, bone_results, hw_results):
         for key in bone_results:
             f.write("{}:  {}\n".format(key, bone_results[key]))
         f.write('\n')
+        # HW_TS_LATENCY: Log latency statistics if available
+        if latency_stats and latency_stats.get("latency_samples", 0) > 0:
+            for key in latency_stats:
+                f.write("{}:  {}\n".format(key, latency_stats[key]))
+            f.write('\n')
 
 
 class Director(object):
@@ -222,8 +227,10 @@ class Director(object):
                 continue
             bone_results = self._bonemon.monitor(self._bonedev_A)
             hw_results = self._hwmon.monitor(self._identity_A)
+            # HW_TS_LATENCY: Collect latency statistics if hw_ts is enabled
+            latency_stats = self._bonemon.collect_hw_latency_stats()
             log_result(self._log_path + "result/{}".format(self._global_log_idx),
-                       point, bone_results, hw_results)
+                       point, bone_results, hw_results, latency_stats)
             log_reproduce(
                 self._log_path + "reproduce/{}".format(self._global_log_idx), point, self._engine)
             self._global_log_idx += 1
@@ -253,8 +260,10 @@ class Director(object):
             # Diagnostic counters version is not available for public
             # hw_results = self._hwmon.monitor(self._identity_A)
             hw_results = {}
+            # HW_TS_LATENCY: Collect latency statistics if hw_ts is enabled
+            latency_stats = self._bonemon.collect_hw_latency_stats()
             log_result(self._log_path + "result/{}".format(self._global_log_idx),
-                       point, bone_results, hw_results)
+                       point, bone_results, hw_results, latency_stats)
             log_reproduce(
                 self._log_path + "reproduce/{}".format(self._global_log_idx), point, self._engine)
             self._global_log_idx += 1

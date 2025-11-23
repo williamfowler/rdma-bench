@@ -10,6 +10,7 @@
 #include <malloc.h>
 
 #include <algorithm>
+#include <fstream>
 #include <thread>
 
 namespace Collie {
@@ -806,17 +807,21 @@ inline int rdma_context::ParseEachEx(struct ibv_cq_ex *cq_ex) {
     PLOG(ERROR) << "ibv_query_rt_values_ex() failed";
   }
   auto cqe_wall_ts = mlx5dv_ts_to_ns(&clock_info, values_ex.raw_clock.tv_nsec);
-  nic_process_time_.push_back(cqe_wall_ts - nic_wall_ts);
-  if (nic_process_time_.size() >= 200000) {
-    std::sort(nic_process_time_.begin(), nic_process_time_.end());
-    LOG(INFO) << "The size of the vector " << nic_process_time_.size();
-    LOG(INFO) << "The min: " << nic_process_time_[0]
-              << ", median: " << nic_process_time_[nic_process_time_.size() / 2]
-              << ", p95: "
-              << nic_process_time_[(int)(nic_process_time_.size() * 0.95)]
-              << ", p99: "
-              << nic_process_time_[(int)(nic_process_time_.size() * 0.99)]
-              << ", max: " << nic_process_time_[nic_process_time_.size() - 1];
+
+  // HW_TS_LATENCY: Calculate actual RDMA operation latency (send -> completion)
+  // Only for send operations (not receives)
+  if (opcode == IBV_WC_RDMA_WRITE || opcode == IBV_WC_RDMA_READ || opcode == IBV_WC_SEND) {
+    uint64_t send_timestamp = ep->PopSendTimestamp();
+    if (send_timestamp > 0) {
+      // Calculate latency: time from post_send to completion
+      uint64_t rdma_latency = nic_wall_ts - send_timestamp;
+      nic_process_time_.push_back(rdma_latency);
+    }
+  }
+
+  // Write stats to file every 10,000 samples (lower threshold for shorter tests)
+  if (nic_process_time_.size() >= 10000) {
+    WriteLatencyStatsToFile();
     nic_process_time_.clear();
   }
   return 0;
@@ -976,6 +981,52 @@ int rdma_context::ClientDatapath() {
   }
   // Never reach here.
   return 0;
+}
+
+// HW_TS_LATENCY: Write latency statistics to file for Python to parse
+void rdma_context::WriteLatencyStatsToFile() {
+  if (nic_process_time_.empty()) return;
+
+  // Sort samples for percentile calculation
+  std::sort(nic_process_time_.begin(), nic_process_time_.end());
+
+  size_t size = nic_process_time_.size();
+  uint64_t min_lat = nic_process_time_[0];
+  uint64_t median_lat = nic_process_time_[size / 2];
+  uint64_t p95_lat = nic_process_time_[(size_t)(size * 0.95)];
+  uint64_t p99_lat = nic_process_time_[(size_t)(size * 0.99)];
+  uint64_t max_lat = nic_process_time_[size - 1];
+
+  // Calculate average
+  uint64_t sum = 0;
+  for (auto lat : nic_process_time_) {
+    sum += lat;
+  }
+  uint64_t avg_lat = sum / size;
+
+  // Write to file in format that bone.py can parse
+  std::string filename = "/tmp/collie_hw_latency_stats.txt";
+  std::ofstream out(filename);
+  if (!out.is_open()) {
+    LOG(ERROR) << "Failed to open latency stats file: " << filename;
+    return;
+  }
+
+  out << "latency_samples: " << size << "\n";
+  out << "latency_min_ns: " << min_lat << "\n";
+  out << "latency_avg_ns: " << avg_lat << "\n";
+  out << "latency_median_ns: " << median_lat << "\n";
+  out << "latency_p95_ns: " << p95_lat << "\n";
+  out << "latency_p99_ns: " << p99_lat << "\n";
+  out << "latency_max_ns: " << max_lat << "\n";
+
+  out.close();
+
+  LOG(INFO) << "Wrote latency stats: n=" << size
+            << ", min=" << min_lat << "ns"
+            << ", median=" << median_lat << "ns"
+            << ", p99=" << p99_lat << "ns"
+            << ", max=" << max_lat << "ns";
 }
 
 }  // namespace Collie

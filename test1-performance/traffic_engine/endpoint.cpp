@@ -84,11 +84,24 @@ int rdma_endpoint::PostSend(const std::vector<rdma_request> &requests,
     wr_cnt++;
   }
 #endif
+  // HW_TS_LATENCY: Capture timestamp before posting (only if hw_ts is enabled)
+  uint64_t send_timestamp = 0;
+  if (FLAGS_hw_ts) {
+    send_timestamp = Now64Ns();
+  }
+
   if (ibv_post_send(qp_, wr_list, &bad_wr)) {
     PLOG(ERROR) << "ibv_post_send() failed";
     return -1;
   }
   send_credits_ -= batch_size;
+
+  // HW_TS_LATENCY: Store timestamp for latency calculation
+  // Only one timestamp per batch since only the last operation is signaled
+  if (FLAGS_hw_ts && send_timestamp != 0) {
+    send_timestamps_.push(send_timestamp);
+  }
+
   send_batch_size_.push(batch_size);
   return 0;
 }
