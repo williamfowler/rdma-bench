@@ -821,8 +821,8 @@ inline int rdma_context::ParseEachEx(struct ibv_cq_ex *cq_ex) {
     }
   }
 
-  // Write stats to file every 1,000 samples (frequent updates for testing)
-  if (nic_process_time_.size() >= 1000) {
+  // Write stats to file every 10 samples (very frequent for testing)
+  if (nic_process_time_.size() >= 10) {
     WriteLatencyStatsToFile();
     nic_process_time_.clear();
   }
