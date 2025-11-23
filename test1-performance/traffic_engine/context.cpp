@@ -814,7 +814,9 @@ inline int rdma_context::ParseEachEx(struct ibv_cq_ex *cq_ex) {
     uint64_t send_timestamp = ep->PopSendTimestamp();
     if (send_timestamp > 0) {
       // Calculate latency: time from post_send to completion
-      uint64_t rdma_latency = nic_wall_ts - send_timestamp;
+      // Use software clock for both timestamps to ensure they're comparable
+      uint64_t completion_timestamp = Now64Ns();
+      uint64_t rdma_latency = completion_timestamp - send_timestamp;
       nic_process_time_.push_back(rdma_latency);
     }
   }
