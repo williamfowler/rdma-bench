@@ -48,6 +48,7 @@ DEFINE_int32(mr_num, 1, "The number of MR one thread contains.");
 DEFINE_bool(use_cuda, false, "Whether use cuda or not");
 DEFINE_int32(gpu_id, 0, "Cuda device id");
 DEFINE_bool(hw_ts, false, "Hardware timestamp enable?");
+DEFINE_string(latency_log_file, "", "Path to write latency statistics (HW_TS_LATENCY)");
 
 DEFINE_bool(run_infinitely, false, "Will run infinitely");
 DEFINE_int32(iters, 200000, "Iterations one QP will send");

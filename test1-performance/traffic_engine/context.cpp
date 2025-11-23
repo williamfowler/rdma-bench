@@ -1006,9 +1006,16 @@ void rdma_context::WriteLatencyStatsToFile() {
   }
   uint64_t avg_lat = sum / size;
 
-  // Write to file in format that bone.py can parse
-  std::string filename = "/tmp/collie_hw_latency_stats.txt";
-  std::ofstream out(filename);
+  // HW_TS_LATENCY: Write directly to log file if path is provided
+  std::string filename;
+  if (!FLAGS_latency_log_file.empty()) {
+    filename = FLAGS_latency_log_file;
+  } else {
+    filename = "/tmp/collie_hw_latency_stats.txt";
+  }
+
+  // Use append mode to add to existing log file
+  std::ofstream out(filename, std::ios::app);
   if (!out.is_open()) {
     LOG(ERROR) << "Failed to open latency stats file: " << filename;
     return;
@@ -1021,10 +1028,11 @@ void rdma_context::WriteLatencyStatsToFile() {
   out << "latency_p95_ns: " << p95_lat << "\n";
   out << "latency_p99_ns: " << p99_lat << "\n";
   out << "latency_max_ns: " << max_lat << "\n";
+  out << "\n";  // Add blank line after latency stats
 
   out.close();
 
-  LOG(INFO) << "Wrote latency stats: n=" << size
+  LOG(INFO) << "Wrote latency stats to " << filename << ": n=" << size
             << ", min=" << min_lat << "ns"
             << ", median=" << median_lat << "ns"
             << ", p99=" << p99_lat << "ns"

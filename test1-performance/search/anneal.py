@@ -31,7 +31,8 @@ def log_reproduce(path: str, point: Point, engine: Engine):
     return
 
 
-def log_result(path: str, point: Point, bone_results, hw_results, latency_stats=None):
+def log_result(path: str, point: Point, bone_results, hw_results):
+    # HW_TS_LATENCY: C++ writes latency stats directly to this file
     with open(path, "w") as f:
         logs = point.log_to_dict()
         json.dump(logs, f)
@@ -42,11 +43,6 @@ def log_result(path: str, point: Point, bone_results, hw_results, latency_stats=
         for key in bone_results:
             f.write("{}:  {}\n".format(key, bone_results[key]))
         f.write('\n')
-        # HW_TS_LATENCY: Log latency statistics if available
-        if latency_stats and latency_stats.get("latency_samples", 0) > 0:
-            for key in latency_stats:
-                f.write("{}:  {}\n".format(key, latency_stats[key]))
-            f.write('\n')
 
 
 class Director(object):
@@ -223,14 +219,14 @@ class Director(object):
             point.random()
             if (self._engine.clean_process()):
                 return []
+            # HW_TS_LATENCY: Set log file path for direct writing
+            self._engine.set_latency_log_file(self._log_path + "result/{}".format(self._global_log_idx))
             if (self._engine.set_up_traffic(point)):
                 continue
             bone_results = self._bonemon.monitor(self._bonedev_A)
             hw_results = self._hwmon.monitor(self._identity_A)
-            # HW_TS_LATENCY: Collect latency statistics if hw_ts is enabled
-            latency_stats = self._bonemon.collect_hw_latency_stats()
             log_result(self._log_path + "result/{}".format(self._global_log_idx),
-                       point, bone_results, hw_results, latency_stats)
+                       point, bone_results, hw_results)
             log_reproduce(
                 self._log_path + "reproduce/{}".format(self._global_log_idx), point, self._engine)
             self._global_log_idx += 1
@@ -254,16 +250,16 @@ class Director(object):
             point.print_dict_log()
             if self._engine.clean_process():
                 return -1
+            # HW_TS_LATENCY: Set log file path for direct writing
+            self._engine.set_latency_log_file(self._log_path + "result/{}".format(self._global_log_idx))
             if (self._engine.set_up_traffic(point)):
                 continue
             bone_results = self._bonemon.monitor(self._bonedev_A)
             # Diagnostic counters version is not available for public
             # hw_results = self._hwmon.monitor(self._identity_A)
             hw_results = {}
-            # HW_TS_LATENCY: Collect latency statistics if hw_ts is enabled
-            latency_stats = self._bonemon.collect_hw_latency_stats()
             log_result(self._log_path + "result/{}".format(self._global_log_idx),
-                       point, bone_results, hw_results, latency_stats)
+                       point, bone_results, hw_results)
             log_reproduce(
                 self._log_path + "reproduce/{}".format(self._global_log_idx), point, self._engine)
             self._global_log_idx += 1
@@ -303,6 +299,8 @@ class Director(object):
                 else:
                     prev_point = copy.deepcopy(point)
                     break
+            # HW_TS_LATENCY: Set log file path for direct writing
+            self._engine.set_latency_log_file(self._log_path + "result/{}".format(self._global_log_idx))
             if (self._engine.set_up_traffic(point)):
                 continue
             bone_results = self._bonemon.monitor(self._bonedev_A)
@@ -395,6 +393,8 @@ class Director(object):
                     else:
                         prev_point = copy.deepcopy(point)
                         break
+                # HW_TS_LATENCY: Set log file path for direct writing
+                self._engine.set_latency_log_file(self._log_path + "result/{}".format(self._global_log_idx))
                 if (self._engine.set_up_traffic(point)):
                     continue
                 bone_results = self._bonemon.monitor(self._bonedev_A)

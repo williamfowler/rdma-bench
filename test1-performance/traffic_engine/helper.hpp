@@ -67,6 +67,7 @@ DECLARE_bool(use_cuda);
 DECLARE_int32(gpu_id);
 
 DECLARE_bool(hw_ts);
+DECLARE_string(latency_log_file);  // HW_TS_LATENCY: Path to write latency stats
 
 // DECLARE_int32(opcode);
 // DECLARE_string(opcode_name);
