@@ -32,6 +32,8 @@ def log_reproduce(path: str, point: Point, engine: Engine):
 
 
 def log_result(path: str, point: Point, bone_results, hw_results, latency_stats=None):
+    print(f"[DEBUG log_result] Writing to {path}")
+    print(f"[DEBUG log_result] latency_stats = {latency_stats}")
     with open(path, "w") as f:
         logs = point.log_to_dict()
         json.dump(logs, f)
@@ -44,9 +46,12 @@ def log_result(path: str, point: Point, bone_results, hw_results, latency_stats=
         f.write('\n')
         # HW_TS_LATENCY: Log latency statistics if available
         if latency_stats and latency_stats.get("latency_samples", 0) > 0:
+            print(f"[DEBUG log_result] Writing latency stats with {latency_stats['latency_samples']} samples")
             for key in latency_stats:
                 f.write("{}:  {}\n".format(key, latency_stats[key]))
             f.write('\n')
+        else:
+            print(f"[DEBUG log_result] No latency stats to write (empty or None)")
 
 
 class Director(object):

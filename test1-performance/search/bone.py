@@ -122,37 +122,49 @@ class MlnxBoneMon(BaseBoneMon):
         If iplist provided, collect from all machines via SSH and combine
         Returns dict with latency metrics in same format as other metrics
         """
+        print(f"\n[DEBUG] collect_hw_latency_stats called with username={username}, iplist={iplist}")
         all_stats = []
 
         # Collect from local machine
         filename = "/tmp/collie_hw_latency_stats.txt"
+        print(f"[DEBUG] Attempting to read local file: {filename}")
         try:
             with open(filename, 'r') as f:
                 content = f.read()
+                print(f"[DEBUG] Local file content ({len(content)} bytes):\n{content[:200]}...")
                 stats = self._read_latency_file(content)
+                print(f"[DEBUG] Parsed local stats: samples={stats['latency_samples']}")
                 if stats["latency_samples"] > 0:
                     all_stats.append(stats)
+                    print(f"[DEBUG] Added local stats to collection")
         except FileNotFoundError:
-            pass
+            print(f"[DEBUG] Local file not found: {filename}")
         except Exception as e:
-            print(f"Error reading local latency stats: {e}")
+            print(f"[DEBUG] Error reading local latency stats: {e}")
 
         # Collect from remote machines via SSH
         if username and iplist:
+            print(f"[DEBUG] Collecting from remote machines: {iplist}")
             for ip in iplist:
                 try:
                     cmd = f"ssh {username}@{ip} 'cat /tmp/collie_hw_latency_stats.txt 2>/dev/null || echo'"
+                    print(f"[DEBUG] Running SSH command for {ip}: {cmd}")
                     result = subprocess.check_output(cmd, shell=True, stderr=subprocess.DEVNULL)
                     content = result.decode()
+                    print(f"[DEBUG] SSH result from {ip} ({len(content)} bytes): {content[:100]}...")
                     if content.strip():
                         stats = self._read_latency_file(content)
+                        print(f"[DEBUG] Parsed stats from {ip}: samples={stats['latency_samples']}")
                         if stats["latency_samples"] > 0:
                             all_stats.append(stats)
+                            print(f"[DEBUG] Added stats from {ip} to collection")
                 except Exception as e:
-                    print(f"Error reading latency stats from {ip}: {e}")
+                    print(f"[DEBUG] Error reading latency stats from {ip}: {e}")
 
         # Combine stats from all machines
+        print(f"[DEBUG] Total stats collected from {len(all_stats)} sources")
         if not all_stats:
+            print(f"[DEBUG] No latency stats found, returning empty dict")
             return {
                 "latency_samples": 0,
                 "latency_min_ns": None,
@@ -174,4 +186,5 @@ class MlnxBoneMon(BaseBoneMon):
             "latency_max_ns": max(s["latency_max_ns"] for s in all_stats if s["latency_max_ns"])
         }
 
+        print(f"[DEBUG] Combined latency stats: {combined}")
         return combined
