@@ -91,11 +91,8 @@ class MlnxBoneMon(BaseBoneMon):
         return 0
 
     # HW_TS_LATENCY: Collect hardware timestamp latency statistics
-    def collect_hw_latency_stats(self):
-        """
-        Read latency statistics from /tmp/collie_hw_latency_stats.txt
-        Returns dict with latency metrics in same format as other metrics
-        """
+    def _read_latency_file(self, content):
+        """Parse latency stats from file content"""
         latency_stats = {
             "latency_samples": 0,
             "latency_min_ns": None,
@@ -106,24 +103,75 @@ class MlnxBoneMon(BaseBoneMon):
             "latency_max_ns": None
         }
 
+        for line in content.split('\n'):
+            line = line.strip()
+            if ':' in line:
+                key, value = line.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                if key in latency_stats:
+                    if key == "latency_samples":
+                        latency_stats[key] = int(value)
+                    else:
+                        latency_stats[key] = float(value)
+        return latency_stats
+
+    def collect_hw_latency_stats(self, username=None, iplist=None):
+        """
+        Read latency statistics from /tmp/collie_hw_latency_stats.txt
+        If iplist provided, collect from all machines via SSH and combine
+        Returns dict with latency metrics in same format as other metrics
+        """
+        all_stats = []
+
+        # Collect from local machine
         filename = "/tmp/collie_hw_latency_stats.txt"
         try:
             with open(filename, 'r') as f:
-                for line in f:
-                    line = line.strip()
-                    if ':' in line:
-                        key, value = line.split(':', 1)
-                        key = key.strip()
-                        value = value.strip()
-                        if key in latency_stats:
-                            if key == "latency_samples":
-                                latency_stats[key] = int(value)
-                            else:
-                                latency_stats[key] = float(value)
+                content = f.read()
+                stats = self._read_latency_file(content)
+                if stats["latency_samples"] > 0:
+                    all_stats.append(stats)
         except FileNotFoundError:
-            # No latency stats available (hw_ts not enabled or no samples yet)
             pass
         except Exception as e:
-            print(f"Error reading latency stats: {e}")
+            print(f"Error reading local latency stats: {e}")
 
-        return latency_stats
+        # Collect from remote machines via SSH
+        if username and iplist:
+            for ip in iplist:
+                try:
+                    cmd = f"ssh {username}@{ip} 'cat /tmp/collie_hw_latency_stats.txt 2>/dev/null || echo'"
+                    result = subprocess.check_output(cmd, shell=True, stderr=subprocess.DEVNULL)
+                    content = result.decode()
+                    if content.strip():
+                        stats = self._read_latency_file(content)
+                        if stats["latency_samples"] > 0:
+                            all_stats.append(stats)
+                except Exception as e:
+                    print(f"Error reading latency stats from {ip}: {e}")
+
+        # Combine stats from all machines
+        if not all_stats:
+            return {
+                "latency_samples": 0,
+                "latency_min_ns": None,
+                "latency_avg_ns": None,
+                "latency_median_ns": None,
+                "latency_p95_ns": None,
+                "latency_p99_ns": None,
+                "latency_max_ns": None
+            }
+
+        # Average the statistics across all machines
+        combined = {
+            "latency_samples": sum(s["latency_samples"] for s in all_stats),
+            "latency_min_ns": min(s["latency_min_ns"] for s in all_stats if s["latency_min_ns"]),
+            "latency_avg_ns": sum(s["latency_avg_ns"] for s in all_stats if s["latency_avg_ns"]) / len([s for s in all_stats if s["latency_avg_ns"]]),
+            "latency_median_ns": sum(s["latency_median_ns"] for s in all_stats if s["latency_median_ns"]) / len([s for s in all_stats if s["latency_median_ns"]]),
+            "latency_p95_ns": max(s["latency_p95_ns"] for s in all_stats if s["latency_p95_ns"]),
+            "latency_p99_ns": max(s["latency_p99_ns"] for s in all_stats if s["latency_p99_ns"]),
+            "latency_max_ns": max(s["latency_max_ns"] for s in all_stats if s["latency_max_ns"])
+        }
+
+        return combined

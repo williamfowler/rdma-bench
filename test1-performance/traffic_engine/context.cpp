@@ -1006,16 +1006,12 @@ void rdma_context::WriteLatencyStatsToFile() {
   }
   uint64_t avg_lat = sum / size;
 
-  // HW_TS_LATENCY: Write directly to log file if path is provided
-  std::string filename;
-  if (!FLAGS_latency_log_file.empty()) {
-    filename = FLAGS_latency_log_file;
-  } else {
-    filename = "/tmp/collie_hw_latency_stats.txt";
-  }
+  // HW_TS_LATENCY: Write to /tmp for Python to read
+  // (Can't write directly to log file due to distributed architecture)
+  std::string filename = "/tmp/collie_hw_latency_stats.txt";
 
-  // Use append mode to add to existing log file
-  std::ofstream out(filename, std::ios::app);
+  // Overwrite file each time (Python reads after each test)
+  std::ofstream out(filename);
   if (!out.is_open()) {
     LOG(ERROR) << "Failed to open latency stats file: " << filename;
     return;
