@@ -319,8 +319,11 @@ class Director(object):
             hw_results = {}
             # Diagnostic counters are now publicly available
             #hw_results = self._hwmon.monitor(self._identity_A)
+            # HW_TS_LATENCY: Collect latency statistics from all machines
+            latency_stats = self._bonemon.collect_hw_latency_stats(
+                username=self._username, iplist=self._iplist)
             log_result(self._log_path + "result/{}".format(self._global_log_idx),
-                       point, bone_results, hw_results)
+                       point, bone_results, hw_results, latency_stats)
             log_reproduce(
                 self._log_path + "reproduce/{}".format(self._global_log_idx), point, self._engine)
             self._global_log_idx += 1
