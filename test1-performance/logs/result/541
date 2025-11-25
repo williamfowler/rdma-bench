@@ -1,0 +1,18 @@
+{"Traffics": [{"process_num": 5, "qp_num": 1, "mtu": 5, "qp_type": "UD", "reqs": "s_3_96_2112_768,s_2_736_2176,s_3_320_96_128,s_1_2368,", "recvs": "3_14912_30240_34816,1_81536,3_192_61888_55648,", "client": {"usr": "wfowler", "ip": "192.168.100.2", "ibdev": "mlx5_0", "use_gpu": true, "numa_node": 0, "mr_num": 2, "buf_num": 3, "buf_size": 4096, "send_wq_depth": 524, "recv_wq_depth": 1, "send_batch": 35, "recv_batch": 0}, "server": {"usr": "wfowler", "ip": "192.168.100.1", "ibdev": "mlx5_0", "use_gpu": true, "numa_node": 1, "mr_num": 4, "buf_num": 3, "buf_size": 117728, "send_wq_depth": 1, "recv_wq_depth": 216, "send_batch": 0, "recv_batch": 28}}, {"process_num": 5, "qp_num": 1, "mtu": 3, "qp_type": "UC", "reqs": "w_2_2624_192,w_1_104928,w_3_25184_65184_29248,w_3_47040_19296_38816,w_3_21216_44704_40640,", "recvs": "4_78464_21664_17664_1824,", "client": {"usr": "wfowler", "ip": "192.168.100.2", "ibdev": "mlx5_0", "use_gpu": true, "numa_node": 0, "mr_num": 4, "buf_num": 1, "buf_size": 119616, "send_wq_depth": 3, "recv_wq_depth": 1, "send_batch": 51, "recv_batch": 0}, "server": {"usr": "wfowler", "ip": "192.168.100.2", "ibdev": "mlx5_0", "use_gpu": true, "numa_node": 1, "mr_num": 1, "buf_num": 1, "buf_size": 119616, "send_wq_depth": 1, "recv_wq_depth": 89, "send_batch": 0, "recv_batch": 1}}]}
+
+
+tx_vport_rdma_unicast_bytes:  22.8458
+rx_vport_rdma_unicast_bytes:  0.0
+tx_vport_rdma_unicast_packets:  1260252.0
+rx_vport_rdma_unicast_packets:  0.0
+tx_prio3_pause_duration:  0.0
+rx_prio3_pause_duration:  0.0
+
+latency_samples:  30
+latency_min_ns:  2154637.0
+latency_avg_ns:  111709515.33333333
+latency_median_ns:  111822528.0
+latency_p95_ns:  331894726.0
+latency_p99_ns:  331894726.0
+latency_max_ns:  331894726.0
+
