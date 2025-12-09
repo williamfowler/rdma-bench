@@ -1,6 +1,8 @@
 {
   "username": "wfowler",
   "iplist": ["192.168.100.2", "192.168.100.1"],
+  "ibdev_A": "mlx5_1",
+  "ibdev_B": "mlx5_0",
   "logpath": "./logs",
   "engine": "/users/wfowler/rdma-bench/test1-performance/traffic_engine/collie_engine",
   "iters": 10,

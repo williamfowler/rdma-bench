@@ -30,6 +30,10 @@ if __name__ == "__main__":
     # Users should set their expectation/anomaly threshold here.
     bars = config["bars"]
     # end of user parameters input
+    # Read device names from config, with mlx5_0 as default
+    ibdev_A = config.get("ibdev_A", "mlx5_0")
+    ibdev_B = config.get("ibdev_B", "mlx5_0")
+
     config = {}
     config["bars"] = bars
     diag_counters = [
@@ -41,5 +45,6 @@ if __name__ == "__main__":
                         hwmon_binary="",
                         config=config, ip_A=iplist[0], ip_B=iplist[-1],
                         usr_A=username, usr_B=username, logpath=logpath,
+                        ibdev_A=ibdev_A, ibdev_B=ibdev_B,
                         bonedev_A="enp94s0f0np0", bonedev_B="enp94s0f0np0", use_gpu=True)
     ret = director.simulated_annealing(iters=iters)
