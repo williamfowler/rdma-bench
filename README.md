@@ -1,3 +1,7 @@
+# CS151 Final Project
+
+This is a fork of the repo associated with the Collie paper we mention in the report (and linked below). Our changes can be found in the latency branch. The main things we changed were in test1-performance in both the traffic engine and search folders.
+
 # rdma-bench
 Benchmark Test Suite for RDMA Networks
 
